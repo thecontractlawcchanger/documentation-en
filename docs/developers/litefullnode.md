@@ -1,109 +1,12 @@
-# Lite FullNode Tool
+# Lite FullNode
+Lite FullNode runs the same code with FullNode, the difference is that Lite FullNode only starts based on state data snapshot, which only contains all account state data and historical data of the latest 65536 blocks. The state data snapshot is small, only about 3% of the FullNode data. Therefore, Lite Fullnode has the advantages of occupying less disk space and starting up fast, but it does not provide historical block and transaction data query by default, and only provides part of HTTP API and GRPC API of FullNode. For APIs that are not supported by Lite Fullnode, please refer to [HTTP]( https://github.com/tronprotocol/java-tron/blob/develop/framework/src/main/java/org/tron/core/services/filter/LiteFnQueryHttpFilter.java), [GRPC](https://github.com/tronprotocol/java-tron/blob/develop/framework/src/main/java/org/tron/core/services/filter/LiteFnQueryGrpcInterceptor.java). But these APIs can be opened by configuring `openHistoryQueryWhenLiteFN = true` in the configuration file, because after the Lite Fullnode startup, the saved data by the Lite Fullnode is exactly the same as that of the FullNode, so after this configuration item is turned on, the Lite Fullnode supports querying the block data synchronized after the node startup, but still does not support querying the block data before the node startup.
 
-## Introduction
+Therefore, if developers only need to use node for block synchronization, processing and broadcasting transactions, or only query the blocks and transactions synchronized after the node starts up, then Lite Fullnoe will be a better choice.
 
-Lite FullNode Tool is used to split the database of a FullNode into a `Snapshot dataset` and a `History dataset`.
+## Lite FullNode Deployment
+The deployment steps and startup command of a Lite fullnode are the same as fullnode's, please refer to [Deployment Instructions](../../using_javatron/installing_javatron/) to deploy a Lite Fullnode. The only difference is the database. You need to obtain the Lite Fullnode database. You can download the Lite Fullnode data snapshot from the [public backup data](../../using_javatron/backup_restore/#lite-fullnode-data-snapshot) and use it directly; or use the [Lite Fullnode data pruning tool](../../using_javatron/toolkit/#lite-fullnode-data-pruning) to convert the Fullnode database to Lite Fullnode database.
 
-- `Snapshot dataset`: the minimum dataset for quick startup of the Lite FullNode.
-- `History dataset`: the archive dataset that used for historical data queries.
 
-Remember stop the FullNode process before any operation. This tool provides the ability to specify which dataset to split.
-The two datasets are split by the `latest_block_number`. Lite FullNode that startup by `Snapshot dataset` does not support query the historical data behind the `latest_block_number`,
-this tool also provides a merge function that can merge `History dataset` into the database of Lite FullNode. For more API details: [HTTP&GRPC APIs](#httpgrpc-apis)
 
-For more design details, please refer to: [TIP128](https://github.com/tronprotocol/tips/issues/128)
-
-## Usage
-
-### Options
-
-This tool provides independent cutting of `Snapshot Dataset` and `History Dataset` and a merge function.
-
-- `--operation | -o`: [ split | merge ] specifies the operation as either to split or to merge
-- `--type | -t`: [ snapshot | history ] is used only with `split` to specify the type of the dataset to be split; snapshot refers to Snapshot Dataset and history refers to History Dataset.
-- `--fn-data-path`: FullNode database directory
-- `--dataset-path`: dataset directory, when operation is `split`, `dataset-path` is the path that store the `Snapshot Dataset` or `History Dataset`,
-otherwise `dataset-path` should be the `History Dataset` path.
-
-### Example
-
-Start a new FullNode using the default config, then an `output-directory` will be produced in the current directory.
-`output-directory` contains a sub-directory named `database` which is the database to be split.
-
-#### Split and get a `Snapshot`
-
-First, stop the FullNode and execute:
-```
-// just for simplify, locate the snapshot into `/tmp` directory,
-java -jar LiteFullNodeTool.jar -o split -t snapshot --fn-data-path output-directory/database --dataset-path /tmp
-```
-then a `snapshot` directory will be generated in `/tmp`, pack this directory and copy it to somewhere that is ready to run a Lite Fullnode.
-Do not forget rename the directory from `snapshot` to `database`.
-(the default value of the storage.db.directory is `database`, make sure rename the snapshot to the specified value)
-
-#### Split a `History`
-
-If historical data query is needed, `History dataset` should be generated and merged into Lite FullNode.
-```
-// just for simplify, locate the history into `/tmp` directory,
-java -jar LiteFullNodeTool.jar -o split -t history --fn-data-path output-directory/database --dataset-path /tmp
-```
-A `history` directory will be generated in `/tmp`, pack this directory and copy it to a Lite Fullnode.
-`History dataset` always take a large storage, make sure the disk has enough volume to store the `History dataset`.
-
-#### Merge
-
-Both `History Dataset` and `Snapshot Dataset` have an info.properties file to identify the block height from which they are segmented.
-Make sure that the `split_block_num` in `History Dataset` is not less than the corresponding value in the `Snapshot Dataset`.
-
-After getting the `History dataset`, the Lite FullNode can merge the `History dataset` and become a real FullNode.
-```
-// just for simplify, assume `History dataset` is locate in /tmp
-java -jar LiteFullNodeTool.jar -o merge --fn-data-path output-directory/database --dataset-path /tmp/history
-```
-
-### HTTP&GRPC APIs
-
-Some APIs are not supported on lite fullnode, here is the list:
-
-#### Http
-
-| wallet/  | walletsolidity/ |
-|---|---|
-| getblockbyid | getblockbyid |
-| getblockbylatestnum | getblockbylatestnum |
-| getblockbylimitnext | getblockbylimitnext |
-| getblockbynum | getblockbynum |
-| getmerkletreevoucherinfo | getmerkletreevoucherinfo |
-| gettransactionbyid | gettransactionbyid |
-| gettransactioncountbyblocknum | gettransactioncountbyblocknum |
-| gettransactioninfobyid | gettransactioninfobyid  |
-| gettransactionreceiptbyid | |
-| isspend | isspend |
-| scanandmarknotebyivk | scanandmarknotebyivk |
-| scannotebyivk | scannotebyivk |
-| scannotebyovk | scannotebyovk |
-| totaltransaction |  |
-
-#### GRPC
-
-|  protocol.Wallet | protocol.WalletSolidity  | protocol.Database  |
-|---|---|---|
-| GetBlockById  |  |   |
-| GetBlockByLatestNum |  |   |
-| GetBlockByLatestNum2  |  |   |
-| GetBlockByLimitNext |  |   |
-| GetBlockByLimitNext2  |  |   |
-| GetBlockByNum  | GetBlockByNum | GetBlockByNum  |
-| GetBlockByNum2 | GetBlockByNum2  |   |
-| GetMerkleTreeVoucherInfo | GetMerkleTreeVoucherInfo  |   |
-| GetTransactionById  | GetTransactionById  |   |
-| GetTransactionCountByBlockNum  | GetTransactionCountByBlockNum |   |
-| GetTransactionInfoById  | GetTransactionInfoById  |   |
-| IsSpend  | IsSpend  |   |
-| ScanAndMarkNoteByIvk | ScanAndMarkNoteByIvk  |   |
-| ScanNoteByIvk | ScanNoteByIvk |   |
-| ScanNoteByOvk  | ScanNoteByOvk  |   |
-| TotalTransaction |   |   |
-
-These APIs can open forcibly by set `openHistoryQueryWhenLiteFN` = true, but not recommended.
+## Lite FullNode Maintenance
+Since the Lite Fullnode will save the same data as the FullNode's after startup, although the data volume of the Lite Fullnode is very small at startup, the data expansion rate in the later period is the same as that of the FullNode, so it may be necessary to periodically cut the data. Pruning Lite Fullnode data is also to use [Lite Fullnode data pruning tool](../../using_javatron/toolkit/#lite-fullnode-data-pruning) to split Lite Fullnode data into snapshot dataset, that is, to obtain the pruned Lite Fullnode data.

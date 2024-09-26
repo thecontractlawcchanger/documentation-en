@@ -2,13 +2,11 @@
 
 ## How to Become a Super Representative
 
-In TRON network, any account can apply to become a witness. Every account can vote for witnesses.
+Block producers in the TRON network, also called super representatives, are elected by voting. Any account can apply to become a super representative candidate by paying 9999 TRX and then participate in the super representative election. Any account can vote for super representative candidates, and the top 27 candidates with the most votes become super representatives, and they have the right to produce blocks. Super representative needs to run a TRON node to participate in block production, and will also receive block rewards and voting rewards. Voters who vote to super representatives will receive voting rewards.
 
-The top 27 witnesses are called SR, the witnesses from 28th to 127th are called Partner, the witnesses after 128th are called Candidates. Only SR can produce blocks.
+The super representative candidates ranked 28th to 127th are also called super representative partners. Super representative partners do not participate in block production and packaging transactions, but will receive voting rewards. Voters who vote to super representative partners will also receive voting rewards.
 
-The votes will be counted every 6 hours, so super representatives may also change every 6 hours.
-
-To prevent vicious attack, TRON network burns 9999 TRX from the account that applies to become a super representative candidate.
+The votes will be counted every 6 hours, so super representatives and super representative partners will be changed every 6 hours.
 
 ## Super Representative Election
 
@@ -19,7 +17,7 @@ Note: Only your latest vote will be counted in TRON network which means your pre
 Example (Using wallet-cli):
 
 ```console
-> freezebalance 10,000,000 3 // Stake 10 TRX to get 10 TRON Power(TP)
+> freezebalancev2 10,000,000 3 // Stake 10 TRX to get 10 TRON Power(TP)
 > votewitness witness1 4 witness2 6 // Vote 4 votes for witness1, 6 votes for witness2
 > votewitness witness1 3 witness2 7 // Vote 3 votes for witness1, 7 votes for witness2
 ```
